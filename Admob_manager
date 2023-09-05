@@ -1,0 +1,166 @@
+public class AdManager {
+
+
+    public static boolean isloadAd = false;
+    static Activity mContaxt;
+    public static Activity activity;
+
+
+    static int maxRequstCode;
+    static int ClickCount = 0;
+
+    public static void initAd(Context context) {
+//        List<String> testDeviceIds = Arrays.asList("");
+//        RequestConfiguration configuration =
+//                new RequestConfiguration.Builder().setTestDeviceIds(testDeviceIds).build();
+//        MobileAds.setRequestConfiguration(configuration);
+        MobileAds.initialize(context, new OnInitializationCompleteListener() {
+            @Override
+            public void onInitializationComplete(InitializationStatus initializationStatus) {
+                Map<String, AdapterStatus> statusMap = initializationStatus.getAdapterStatusMap();
+                for (String adapterClass : statusMap.keySet()) {
+                    AdapterStatus status = statusMap.get(adapterClass);
+                    Log.d("MyApp", String.format(
+                            "Adapter name: %s, Description: %s, Latency: %d",
+                            adapterClass, status.getDescription(), status.getLatency()));
+                }
+            }
+        });
+
+    }
+
+    static AdView gadView;
+
+    public static void loadBannerAd(Context context, LinearLayout adContainer) {
+        gadView = new AdView(context);
+        gadView.setAdUnitId(context.getString(R.string.banner));
+        adContainer.addView(gadView);
+        loadBanner(context);
+    }
+
+
+    static void loadBanner(Context context) {
+        AdRequest adRequest =
+                new AdRequest.Builder().build();
+
+        AdSize adSize = getAdSize((Activity) context);
+        gadView.setAdSize(adSize);
+        gadView.loadAd(adRequest);
+    }
+
+
+    static AdSize getAdSize(Activity context) {
+        Display display = context.getWindowManager().getDefaultDisplay();
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        display.getMetrics(outMetrics);
+
+        float widthPixels = outMetrics.widthPixels;
+        float density = outMetrics.density;
+
+        int adWidth = (int) (widthPixels / density);
+        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, adWidth);
+    }
+
+
+    public static void adptiveBannerAd(Context context, LinearLayout adContainer) {
+        AdView adView = new AdView(context);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adView.setAdSize(AdSize.MEDIUM_RECTANGLE);
+        adView.setAdUnitId(context.getString(R.string.banner_fav));
+        adView.loadAd(adRequest);
+        adContainer.addView(adView);
+    }
+
+    public static void adptiveBannernormal(Context context, LinearLayout adContainer) {
+        AdView adView = new AdView(context);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adView.setAdSize(AdSize.BANNER);
+        adView.setAdUnitId(context.getString(R.string.banner));
+        adView.loadAd(adRequest);
+        adContainer.addView(adView);
+    }
+
+
+    public static InterstitialAd mInterstitialAd;
+
+    public static void loadInterAd(Context context) {
+
+        if (ClickCount > 5) {
+            // Toast.makeText(context, "Loading start", Toast.LENGTH_SHORT).show();
+
+            AdRequest adRequest = new AdRequest.Builder().build();
+            InterstitialAd.load(context, context.getString(R.string.intersialmain), adRequest, new InterstitialAdLoadCallback() {
+                @Override
+                public void onAdLoaded(@NonNull com.google.android.gms.ads.interstitial.InterstitialAd interstitialAd) {
+                    // The mInterstitialAd reference will be null until
+                    // an ad is loaded.
+                    mInterstitialAd = interstitialAd;
+                    isloadAd = true;
+                }
+
+                @Override
+                public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                    // Handle the error
+                    mInterstitialAd = null;
+                }
+            });
+
+        }
+    }
+
+    public static void showInterAd(final Activity context, final Intent intent) {
+        if (mInterstitialAd != null) {
+
+            mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                @Override
+                public void onAdDismissedFullScreenContent() {
+                    // Called when fullscreen content is dismissed.
+//                    Log.d("TAG", "The ad was dismissed.");
+                    ClickCount = 0;
+                    loadInterAd(context);
+                    startActivity(context, intent);
+
+                }
+
+                @Override
+                public void onAdFailedToShowFullScreenContent(com.google.android.gms.ads.AdError adError) {
+//                     Called when fullscreen content failed to show.
+//                    Log.d("TAG", "The ad failed to show.");
+                }
+
+
+                @Override
+                public void onAdShowedFullScreenContent() {
+                    // Called when fullscreen content is shown.
+                    // Make sure to set your reference to null so you don't
+                    // show it a second time.
+                    mInterstitialAd = null;
+//                    Log.d("TAG", "The ad was shown.");
+                }
+            });
+            mInterstitialAd.show((Activity) context);
+        } else {
+            //  Toast.makeText(context, ""+ClickCount, Toast.LENGTH_SHORT).show();
+            ClickCount++;
+            if (ClickCount > 5) {
+                loadInterAd(context);
+            }
+            startActivity(context, intent);
+        }
+    }
+
+
+    static void startActivity(Activity context, Intent intent, int requestCode) {
+        if (intent != null) {
+            context.startActivityForResult(intent, requestCode);
+        }
+    }
+
+    static void startActivity(Context context, Intent intent) {
+        if (intent != null) {
+            context.startActivity(intent);
+        }
+    }
+
+
+}
